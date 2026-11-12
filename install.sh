@@ -6,6 +6,8 @@
 # Safe to run again: it keeps your existing .env (passwords, keys) and data.
 set -euo pipefail
 
+trap 'echo; echo "xx  install.sh stopped at line $LINENO. Send this screen to get help." >&2' ERR
+
 cd "$(dirname "$0")"
 KIN_DIR="$(pwd)"
 DEFAULT_DOMAIN="kin-ai.site"
@@ -48,7 +50,9 @@ fi
 
 # ---------------------------------------------------------------- 3. firewall
 say "Firewall: allowing SSH, HTTP and HTTPS only"
-SSH_PORT="$(sshd -T 2>/dev/null | awk '/^port /{print $2; exit}')"
+# sshd -T can fail on some systems (e.g. no /run/sshd yet); fall back to the listening port, then 22.
+SSH_PORT="$( (sshd -T 2>/dev/null || true) | awk '/^port /{print $2; exit}' )"
+[ -n "$SSH_PORT" ] || SSH_PORT="$( (ss -tlnp 2>/dev/null || true) | awk '/sshd/ {n=split($4,a,":"); print a[n]; exit}' )"
 SSH_PORT="${SSH_PORT:-22}"
 ufw allow "${SSH_PORT}/tcp" >/dev/null   # SSH first, so you never lock yourself out
 ufw allow 80/tcp >/dev/null
@@ -63,7 +67,7 @@ ask() { # ask VAR "Question" default secret
   local var="$1" q="$2" def="${3:-}" secret="${4:-}" val=""
   if [ -n "${!var:-}" ]; then return; fi
   if [ -t 0 ]; then
-    if [ "$secret" = "secret" ]; then read -r -s -p "$q " val; echo; else read -r -p "$q [${def}] " val; fi
+    if [ "$secret" = "secret" ]; then read -r -s -p "$q " val || true; echo; else read -r -p "$q [${def}] " val || true; fi
   fi
   printf -v "$var" '%s' "${val:-$def}"
 }
@@ -142,5 +146,5 @@ say "Kin is running:  https://${DOMAIN}"
 echo "  1. Open it on your phone and create your account."
 echo "  2. Then lock sign-ups so nobody else can register:   ./kin.sh lock-signups"
 echo "  3. Add to home screen from your browser menu to use it like an app."
-[ -z "${ANTHROPIC_API_KEY:-}" ] && warn "No Anthropic key yet: the Think tab will be off until you run  ./kin.sh set-key"
+if [ -z "${ANTHROPIC_API_KEY:-}" ]; then warn "No Anthropic key yet: the Think tab will be off until you run  ./kin.sh set-key"; fi
 echo "Help:  ./kin.sh help"
