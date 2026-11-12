@@ -1,0 +1,19 @@
+{
+  "name": "Fixture A — irregular earner",
+  "onboarding": {
+    "region": {"country": "KE", "area_type": "city", "currency": "KES", "timezone": "Africa/Nairobi",
+               "languages": ["sw", "en"], "notes": "Transport costs change a lot when it rains."},
+    "economic_frame": {"income_pattern": "irregular", "how_money_arrives": "Daily sales, cash and mobile money",
+                       "stability": "Some weeks are good, some are very slow",
+                       "obligations": ["School fees for my sister", "Support for my mother"],
+                       "saving_methods": ["savings group (chama) that meets monthly"]},
+    "values_profile": {"matters_most": ["family"], "sensitivities": ["Don't tell me to cut what I send home"]},
+    "emotional_baseline": {"encouragement": "Be straight with me, no cheerleading", "backfires": "Too much praise",
+                           "quiet_hours": {"from": "21:00", "to": "06:00"}}
+  },
+  "memories": [
+    "Rainy week again. Sales were slow and matatu fares went up, so I only made it to the chama with half my share.",
+    "My sister's school fees are due in January. That always comes first."
+  ],
+  "fixture_facts": ["irregular", "chama", "savings group", "school fees", "sister", "mobile money", "rain", "slow"]
+}

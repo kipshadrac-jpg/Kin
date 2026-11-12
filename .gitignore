@@ -1,0 +1,13 @@
+.env
+data/
+backups/
+**/__pycache__/
+backend/.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+web/node_modules/
+web/.next/
+web/out/
+web/next-env.d.ts
+dist/

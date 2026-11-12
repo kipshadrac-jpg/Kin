@@ -1,0 +1,40 @@
+# Caddy gets and renews the HTTPS certificate for {$DOMAIN} automatically.
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# GoTrue's admin API is only for the Kin API inside the server.
+	# (Longer paths win, so this is checked before /auth/v1/*.)
+	handle /auth/v1/admin* {
+		respond 404
+	}
+
+	handle /auth/v1/* {
+		uri strip_prefix /auth/v1
+		reverse_proxy auth:9999
+	}
+
+	handle /api/* {
+		reverse_proxy api:8000 {
+			# stream chat events as they happen
+			flush_interval -1
+		}
+	}
+
+	handle {
+		root * /srv/web
+		@html path / *.html */
+		header @html Cache-Control "no-cache"
+		header /_next/static/* Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} {path}/index.html /index.html
+		file_server
+	}
+}

@@ -1,0 +1,63 @@
+[project]
+name = "kin-backend"
+version = "0.1.0"
+description = "Kin — personal life companion API"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=2.8.0",
+    "arq>=0.28.0",
+    "asyncpg>=0.32.0",
+    "fastapi>=0.162.5",
+    "httpx>=0.28.1",
+    "langgraph>=1.2.21",
+    "pydantic>=2.14.3",
+    "pydantic-settings>=2.16.2",
+    "pyjwt[crypto]>=2.15.1",
+    "python-dateutil>=4.0.0",
+    "pyyaml>=6.0.3",
+    "redis>=5.3.1",
+    "sqlalchemy[asyncio]>=2.1.8",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "ASYNC"]
+ignore = ["S101", "B008", "S311"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "E501", "S608"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+exclude = ["tests/"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = ["integration: needs the local Postgres + GoTrue stack", "eval: calls a real model; run on demand"]
+addopts = "-m 'not eval'"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.170.15",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "ruff>=0.17.5",
+    "types-python-dateutil>=2.9.0.20261104",
+    "types-pyyaml>=6.0.12.20261111",
+]

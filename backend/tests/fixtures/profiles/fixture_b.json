@@ -1,0 +1,19 @@
+{
+  "name": "Fixture B — salaried, indebted",
+  "onboarding": {
+    "region": {"country": "GB", "area_type": "city", "currency": "GBP", "timezone": "Europe/London",
+               "languages": ["en"]},
+    "economic_frame": {"income_pattern": "regular", "how_money_arrives": "Monthly salary into my bank account",
+                       "stability": "Steady, but the loan takes a big bite",
+                       "obligations": ["Loan repayment, about 40% of my salary"], "saving_methods": ["not currently"]},
+    "values_profile": {"matters_most": ["getting out of debt", "my health"],
+                       "aspirations": ["Start exercising regularly"]},
+    "emotional_baseline": {"encouragement": "Remind me how far I've come", "backfires": "Being told I'm behind",
+                           "checkin_times": ["07:30"]}
+  },
+  "memories": [
+    "Another twelve-hour shift. I want to start exercising but by the time I'm home I'm wiped out.",
+    "Paid off another chunk of the loan this month. Slow, but it's going down."
+  ],
+  "fixture_facts": ["loan", "twelve-hour", "12-hour", "shift", "salary", "how far you've come", "exercise", "debt"]
+}

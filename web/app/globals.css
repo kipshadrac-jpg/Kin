@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* Colours from the Kin mockups. Tokens switch for dark mode. */
+:root {
+  --bg: #eef2eb;
+  --surface: #ffffff;
+  --ink: #213a2e;
+  --muted: #4d6356;
+  --soft: #d4e3d8;
+  --track: #e5ebe5;
+  --accent: #82a38e;
+  --line: #cfd8d1;
+  --on-ink: #ffffff;
+  --danger: #9b3b2f;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111915;
+    --surface: #1a251f;
+    --ink: #e4eee7;
+    --muted: #a3b6aa;
+    --soft: #23352b;
+    --track: #2a3a31;
+    --accent: #82a38e;
+    --line: #34463b;
+    --on-ink: #13211a;
+    --danger: #e08a7d;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-soft: var(--soft);
+  --color-track: var(--track);
+  --color-accent: var(--accent);
+  --color-line: var(--line);
+  --color-on-ink: var(--on-ink);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html, body { background: var(--bg); color: var(--ink); }
+body { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .55; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+input, textarea, select { background: var(--surface); color: var(--ink); }

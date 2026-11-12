@@ -1,0 +1,34 @@
+# Support resources shown during crisis or severe financial distress (Section 11).
+#
+# MAINTAINED BY HUMANS ONLY. The agent never writes to this file.
+# An entry is shown ONLY when `verified_on` is set to the date a person
+# confirmed every number and link still works. Entries with verified_on: null
+# are ignored, and Kin falls back to "contact local emergency services".
+#
+# The values below are a starting point, NOT verified by a person yet.
+# Check each one, then set verified_on (YYYY-MM-DD).
+countries:
+  KE:
+    name: Kenya
+    verified_on: null
+    emergency: ["999", "112"]
+    crisis:
+      - name: Kenya Red Cross (toll-free)
+        contact: "1199"
+    financial: []
+  US:
+    name: United States
+    verified_on: null
+    emergency: ["911"]
+    crisis:
+      - name: 988 Suicide & Crisis Lifeline (call or text)
+        contact: "988"
+    financial: []
+  GB:
+    name: United Kingdom
+    verified_on: null
+    emergency: ["999", "112"]
+    crisis:
+      - name: Samaritans
+        contact: "116 123"
+    financial: []

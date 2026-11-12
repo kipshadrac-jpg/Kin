@@ -1,0 +1,18 @@
+{
+  "name": "Fixture C — student, shared household",
+  "onboarding": {
+    "region": {"country": "US", "area_type": "town", "currency": "USD", "timezone": "America/Chicago",
+               "languages": ["en"]},
+    "economic_frame": {"income_pattern": "none", "how_money_arrives": "A small monthly allowance from my parents",
+                       "obligations": [], "saving_methods": ["at home"]},
+    "values_profile": {"matters_most": ["my faith", "my studies"],
+                       "non_negotiables": ["Friday prayers and Sunday with family"]},
+    "emotional_baseline": {"encouragement": "Gentle, and please don't nag", "backfires": "Lots of reminders",
+                           "quiet_hours": {"from": "22:00", "to": "08:00"}}
+  },
+  "memories": [
+    "Exams start in three weeks. I share a room with my brother so studying at home is hard.",
+    "My allowance came in. I put a little in the jar on my shelf like always."
+  ],
+  "fixture_facts": ["allowance", "student", "exam", "studies", "faith", "brother", "jar", "gentle"]
+}

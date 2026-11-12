@@ -1,0 +1,43 @@
+# Local stack for the integration tests (ports match tests/conftest.py).
+#   docker compose -f deploy/docker-compose.test.yml up -d
+#   cd backend && uv run pytest
+name: kin-test
+services:
+  db:
+    image: supabase/postgres:17.6.1.136
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: "5432"
+      POSTGRES_PORT: "5432"
+      PGPASSWORD: testpass
+      POSTGRES_PASSWORD: testpass
+      PGDATABASE: postgres
+      POSTGRES_DB: postgres
+      JWT_EXP: "3600"
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf", "-c", "log_min_messages=fatal"]
+    volumes:
+      - ./db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro
+    ports: ["127.0.0.1:55432:5432"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 3s
+      retries: 40
+  auth:
+    image: supabase/gotrue:v2.197.0
+    depends_on: { db: { condition: service_healthy } }
+    ports: ["127.0.0.1:59999:9999"]
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: http://localhost:59999
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:testpass@db:5432/postgres
+      GOTRUE_SITE_URL: http://localhost
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: "3600"
+      GOTRUE_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_RATE_LIMIT_EMAIL_SENT: "1000"

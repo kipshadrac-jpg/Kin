@@ -1,0 +1,165 @@
+# Kin production stack. Values come from .env (written by install.sh).
+# Only Caddy is reachable from the internet (ports 80/443). Everything else
+# talks on the private "kin" network.
+
+name: kin
+
+x-api-env: &api-env
+  APP_NAME: ${APP_NAME:-Kin}
+  ENVIRONMENT: production
+  LOG_LEVEL: INFO
+  REDIS_URL: redis://redis:6379/0
+  SUPABASE_JWT_SECRET: ${JWT_SECRET}
+  SUPABASE_JWT_AUDIENCE: authenticated
+  GOTRUE_URL: http://auth:9999
+  LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+  LLM_MODEL: ${LLM_MODEL:-claude-opus-5-5}
+  LLM_REFUSAL_FALLBACK: ${LLM_REFUSAL_FALLBACK:-default}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-hashing}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+  LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-llama3.2}
+  CORS_ORIGINS: https://${DOMAIN}
+  RATE_LIMIT_ENABLED: "true"
+
+services:
+  db:
+    image: supabase/postgres:17.6.1.136
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: "5432"
+      POSTGRES_PORT: "5432"
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: postgres
+      POSTGRES_DB: postgres
+      JWT_EXP: "3600"
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf", "-c", "log_min_messages=fatal"]
+    volumes:
+      - ./deploy/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro
+      - ./deploy/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:ro
+      - db-data:/var/lib/postgresql/data
+      - db-config:/etc/postgresql-custom
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [kin]
+
+  auth:
+    image: supabase/gotrue:v2.197.0
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: https://${DOMAIN}/auth/v1
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: https://${DOMAIN}
+      GOTRUE_URI_ALLOW_LIST: https://${DOMAIN}
+      GOTRUE_DISABLE_SIGNUP: ${DISABLE_SIGNUP:-false}
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: "3600"
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_ISSUER: https://${DOMAIN}/auth/v1
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: "false"
+      # No email server is set up, so accounts are confirmed immediately.
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_PASSWORD_MIN_LENGTH: "8"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [kin]
+
+  redis:
+    image: redis:7.4.12-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+    networks: [kin]
+
+  migrate:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    image: kin-backend:latest
+    command: ["python", "-m", "app.db.migrate"]
+    depends_on:
+      db: { condition: service_healthy }
+      auth: { condition: service_healthy }
+    environment:
+      <<: *api-env
+      DATABASE_URL: postgresql://kin_api:${KIN_API_DB_PASSWORD}@db:5432/postgres
+      DATABASE_ADMIN_URL: postgresql://supabase_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      KIN_API_DB_PASSWORD: ${KIN_API_DB_PASSWORD}
+      KIN_WORKER_DB_PASSWORD: ${KIN_WORKER_DB_PASSWORD}
+    restart: "no"
+    networks: [kin]
+
+  api:
+    image: kin-backend:latest
+    restart: unless-stopped
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    environment:
+      <<: *api-env
+      DATABASE_URL: postgresql://kin_api:${KIN_API_DB_PASSWORD}@db:5432/postgres
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [kin]
+
+  worker:
+    image: kin-backend:latest
+    restart: unless-stopped
+    command: ["arq", "app.worker.WorkerSettings"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    environment:
+      <<: *api-env
+      # The worker's own login: BYPASSRLS for cross-user sweeps only.
+      DATABASE_URL: postgresql://kin_worker:${KIN_WORKER_DB_PASSWORD}@db:5432/postgres
+    networks: [kin]
+
+  caddy:
+    image: caddy:2.11.9-alpine
+    restart: unless-stopped
+    depends_on: [api, auth]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./web/out:/srv/web:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [kin]
+
+volumes:
+  db-data:
+  db-config:
+  caddy-data:
+  caddy-config:
+
+networks:
+  kin:
